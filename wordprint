@@ -5,6 +5,7 @@ Wordpress site.
 """
 
 import csv
+import re
 import sys
 from collections import defaultdict
 
@@ -27,11 +28,12 @@ def generate_wordprint(comments_csv):
     # When a word becomes too common, move it to the common_words set. This
     # will be checked first before adding words to wordprint.
     common_words = set()
+    find_words = re.compile('(\w+)')
     for user, text in read_comments(comments_csv):
         # Convert to lowercase.
         lower_text = text.lower()
         # Grab all 'words'. Using the regex understanding of what a word is.
-        print user, text
+        words = find_words.findall(lower_text)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
