@@ -7,8 +7,15 @@ Wordpress site.
 import csv
 import sys
 
+def usage():
+    print "usage: %s CSV ..." % (sys.argv[0])
+    sys.exit(0)
+
 def generate_wordprint():
     pass
 
 if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        usage()
+
     generate_wordprint()
