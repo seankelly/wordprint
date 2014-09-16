@@ -11,11 +11,15 @@ def usage():
     print "usage: %s CSV ..." % (sys.argv[0])
     sys.exit(0)
 
-def generate_wordprint():
+def read_comments():
+    pass
+
+def generate_wordprint(comments_csv):
     pass
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         usage()
 
-    generate_wordprint()
+    for comments_csv in sys.argv[1:]:
+        generate_wordprint(comments_csv)
