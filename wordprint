@@ -34,6 +34,8 @@ def generate_wordprint(comments_csv):
         lower_text = text.lower()
         # Grab all 'words'. Using the regex understanding of what a word is.
         words = find_words.findall(lower_text)
+        for w in words:
+            wordprint[w].add(user)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
