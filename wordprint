@@ -46,7 +46,23 @@ def generate_wordprint(comments_csv):
             if len(wordprint[w]) > 2:
                 common_words.add(w)
                 del wordprint[w]
-    print len(wordprint.keys())
+    summarize_wordprint(user_wordprint, wordprint)
+
+def summarize_wordprint(user_wordprint, wordprint):
+    def sort_words(user):
+        # Given a user, return a lambda to sort the unique words in descending
+        # order.
+        u = user_wordprint[user]
+        return lambda a,b: cmp(u[b], u[a])
+    unique_words = set(wordprint.keys())
+    for user in user_wordprint:
+        user_words = set(user_wordprint[user].keys())
+        user_unique = unique_words & user_words
+        user_print = sorted(user_unique, sort_words(user))
+        # If no unique words, skip this user.
+        if len(user_print) == 0:
+            continue
+        print user, user_print[0], user_wordprint[user][user_print[0]]
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
