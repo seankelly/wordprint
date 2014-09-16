@@ -6,6 +6,7 @@ Wordpress site.
 
 import csv
 import sys
+from collections import defaultdict
 
 def usage():
     print "usage: %s CSV ..." % (sys.argv[0])
@@ -20,7 +21,16 @@ def read_comments(csv_file):
         yield l[2], l[8]
 
 def generate_wordprint(comments_csv):
+    # This dict maps word => set(users).
+    # When a word becomes too common, delete it and move it to common_words.
+    wordprint = defaultdict(lambda x: set())
+    # When a word becomes too common, move it to the common_words set. This
+    # will be checked first before adding words to wordprint.
+    common_words = set()
     for user, text in read_comments(comments_csv):
+        # Convert to lowercase.
+        lower_text = text.lower()
+        # Grab all 'words'. Using the regex understanding of what a word is.
         print user, text
 
 if __name__ == '__main__':
