@@ -11,11 +11,17 @@ def usage():
     print "usage: %s CSV ..." % (sys.argv[0])
     sys.exit(0)
 
-def read_comments():
-    pass
+def read_comments(csv_file):
+    # Field 3: user
+    # Field 9: text
+    f = open(csv_file, 'rb')
+    c = csv.reader(f, delimiter=',', doublequote=False, escapechar='\\')
+    for l in c:
+        yield l[2], l[8]
 
 def generate_wordprint(comments_csv):
-    pass
+    for user, text in read_comments(comments_csv):
+        print user, text
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
