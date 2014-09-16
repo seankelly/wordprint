@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+"""
+Create word fingerprints from CSV dumps of the comments table of a
+Wordpress site.
+"""
+
+import csv
+import sys
+
+def generate_wordprint():
+    pass
+
+if __name__ == '__main__':
+    generate_wordprint()
