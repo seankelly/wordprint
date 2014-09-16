@@ -24,7 +24,7 @@ def read_comments(csv_file):
 def generate_wordprint(comments_csv):
     # This dict maps word => set(users).
     # When a word becomes too common, delete it and move it to common_words.
-    wordprint = defaultdict(lambda x: set())
+    wordprint = defaultdict(lambda: set())
     # When a word becomes too common, move it to the common_words set. This
     # will be checked first before adding words to wordprint.
     common_words = set()
