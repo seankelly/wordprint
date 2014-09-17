@@ -9,9 +9,18 @@ import re
 import sys
 from collections import defaultdict
 
+valid_words = set()
+
 def usage():
     print "usage: %s CSV ..." % (sys.argv[0])
     sys.exit(0)
+
+def load_dictionary():
+    global valid_words
+    with open('/usr/share/dict/words', 'rb') as f:
+        for word in f:
+            w = word.lower()
+            valid_words.add(w)
 
 def read_comments(csv_file):
     # Field 3: user
@@ -68,5 +77,6 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         usage()
 
+    load_dictionary()
     for comments_csv in sys.argv[1:]:
         generate_wordprint(comments_csv)
