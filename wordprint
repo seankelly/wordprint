@@ -19,7 +19,7 @@ def load_dictionary():
     global valid_words
     with open('/usr/share/dict/words', 'rb') as f:
         for word in f:
-            w = word.lower()
+            w = word.strip().lower()
             valid_words.add(w)
 
 def read_comments(csv_file):
