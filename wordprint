@@ -31,12 +31,6 @@ def read_comments(csv_file):
         yield l[2], l[8]
 
 def generate_wordprint(comments_csv):
-    # This dict maps word => set(users).
-    # When a word becomes too common, delete it and move it to common_words.
-    wordprint = defaultdict(lambda: set())
-    # When a word becomes too common, move it to the common_words set. This
-    # will be checked first before adding words to wordprint.
-    common_words = set()
     # User dict to map user => word => count.
     user_wordprint = defaultdict(
         lambda: defaultdict(
@@ -55,17 +49,18 @@ def generate_wordprint(comments_csv):
                 continue
             word_usage[w] += 1
             user_wordprint[user][w] += 1
-            if w in common_words:
-                continue
-    summarize_wordprint(user_wordprint, wordprint)
+    summarize_wordprint(user_wordprint, word_usage)
 
-def summarize_wordprint(user_wordprint, wordprint):
+def summarize_wordprint(user_wordprint, word_usage):
     def sort_words(user):
         # Given a user, return a lambda to sort the unique words in descending
         # order.
         u = user_wordprint[user]
         return lambda a,b: cmp(u[b], u[a])
-    unique_words = set(wordprint.keys())
+
+    top_words = sorted(word_usage,
+        cmp=lambda a,b: cmp(word_usage[b], word_usage[a]))
+    unique_words = set(word_usage.keys())
     for user in user_wordprint:
         user_words = set(user_wordprint[user].keys())
         user_unique = unique_words & user_words
