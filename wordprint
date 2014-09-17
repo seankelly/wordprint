@@ -48,6 +48,8 @@ def generate_wordprint(comments_csv):
         for w in words:
             if w not in valid_words:
                 continue
+            if len(w) <= 3:
+                continue
             word_usage[w] += 1
             user_wordprint[user][w] += 1
     summarize_wordprint(user_wordprint, word_usage)
