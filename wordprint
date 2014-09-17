@@ -8,6 +8,7 @@ import csv
 import re
 import sys
 from collections import defaultdict
+from HTMLParser import HTMLParser
 
 valid_words = set()
 
@@ -22,6 +23,17 @@ def load_dictionary():
             w = word.strip().lower()
             valid_words.add(w)
     valid_words.remove('twitter')
+
+class HTMLStrip(HTMLParser):
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.fed = []
+
+    def handle_data(self, data):
+        self.fed.append(data)
+
+    def stripped_html(self):
+        return ''.join(self.fed)
 
 def read_comments(csv_file):
     # Field 3: user
@@ -41,8 +53,10 @@ def generate_wordprint(comments_csv):
     find_words = re.compile('(\w+)')
     global valid_words
     for user, text in read_comments(comments_csv):
+        s = HTMLStrip()
+        s.feed(text.lower())
         # Convert to lowercase.
-        lower_text = text.lower()
+        lower_text = s.stripped_html()
         # Grab all 'words'. Using the regex understanding of what a word is.
         words = find_words.findall(lower_text)
         for w in words:
