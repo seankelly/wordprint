@@ -63,6 +63,10 @@ def summarize_wordprint(user_wordprint, word_usage):
     unique_words = set(word_usage.keys())
     for user in user_wordprint:
         user_words = set(user_wordprint[user].keys())
+        # If fewer than 100 unique words have been uttered by this person, skip
+        # them.
+        if len(user_words) < 100:
+            continue
         user_unique = unique_words & user_words
         user_print = sorted(user_unique, sort_words(user))
         # If no unique words, skip this user.
