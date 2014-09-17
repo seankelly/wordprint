@@ -54,9 +54,9 @@ def generate_wordprint(comments_csv):
     global valid_words
     for user, text in read_comments(comments_csv):
         s = HTMLStrip()
-        s.feed(text.lower())
         # Convert to lowercase.
-        lower_text = s.stripped_html()
+        s.feed(unicode(text, encoding='utf8'))
+        lower_text = s.stripped_html().lower()
         # Grab all 'words'. Using the regex understanding of what a word is.
         words = find_words.findall(lower_text)
         for w in words:
