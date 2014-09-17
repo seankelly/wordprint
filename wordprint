@@ -60,19 +60,21 @@ def summarize_wordprint(user_wordprint, word_usage):
 
     top_words = sorted(word_usage,
         cmp=lambda a,b: cmp(word_usage[b], word_usage[a]))
-    unique_words = set(word_usage.keys())
+    popular_words = set(top_words[0:250])
     for user in user_wordprint:
         user_words = set(user_wordprint[user].keys())
         # If fewer than 100 unique words have been uttered by this person, skip
         # them.
         if len(user_words) < 100:
             continue
-        user_unique = unique_words & user_words
+        user_unique = user_words - popular_words
         user_print = sorted(user_unique, sort_words(user))
         # If no unique words, skip this user.
         if len(user_print) == 0:
             continue
-        print user, user_print[0], user_wordprint[user][user_print[0]]
+        top_five = map(lambda x: "%s" % (x),
+                user_print[0:5])
+        print "%s: %s" % (user, ', '.join(top_five))
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
