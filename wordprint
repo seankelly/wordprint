@@ -42,12 +42,15 @@ def generate_wordprint(comments_csv):
         lambda: defaultdict(
             lambda: 0))
     find_words = re.compile('(\w+)')
+    global valid_words
     for user, text in read_comments(comments_csv):
         # Convert to lowercase.
         lower_text = text.lower()
         # Grab all 'words'. Using the regex understanding of what a word is.
         words = find_words.findall(lower_text)
         for w in words:
+            if w not in valid_words:
+                continue
             user_wordprint[user][w] += 1
             if w in common_words:
                 continue
