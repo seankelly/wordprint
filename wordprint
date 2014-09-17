@@ -21,6 +21,7 @@ def load_dictionary():
         for word in f:
             w = word.strip().lower()
             valid_words.add(w)
+    valid_words.remove('twitter')
 
 def read_comments(csv_file):
     # Field 3: user
