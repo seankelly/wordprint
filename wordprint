@@ -41,6 +41,8 @@ def generate_wordprint(comments_csv):
     user_wordprint = defaultdict(
         lambda: defaultdict(
             lambda: 0))
+    # Track how often each word is used.
+    word_usage = defaultdict(lambda: 0)
     find_words = re.compile('(\w+)')
     global valid_words
     for user, text in read_comments(comments_csv):
@@ -51,13 +53,10 @@ def generate_wordprint(comments_csv):
         for w in words:
             if w not in valid_words:
                 continue
+            word_usage[w] += 1
             user_wordprint[user][w] += 1
             if w in common_words:
                 continue
-            wordprint[w].add(user)
-            if len(wordprint[w]) > 2:
-                common_words.add(w)
-                del wordprint[w]
     summarize_wordprint(user_wordprint, wordprint)
 
 def summarize_wordprint(user_wordprint, wordprint):
