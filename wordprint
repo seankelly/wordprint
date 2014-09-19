@@ -12,6 +12,11 @@ from HTMLParser import HTMLParser
 
 valid_words = set()
 
+# Number of words to include in each user's fingerprint.
+FINGERPRINT_WORDS = 4
+# Number of total users that can shared a given word.
+SHARED_USERS = 2
+
 def usage():
     print "usage: %s CSV ..." % (sys.argv[0])
     sys.exit(0)
@@ -68,6 +73,52 @@ def generate_wordprint(comments_csv):
             user_wordprint[user][w] += 1
     summarize_wordprint(user_wordprint, word_usage)
 
+def find_unique_words(user_sorted_words):
+    user_top_words = {}
+    user_word_idx = {}
+    # Get the top N words for each user.
+    for user in user_sorted_words:
+        top_words = user_sorted_words[user][0:FINGERPRINT_WORDS]
+        user_top_words[user] = set(top_words)
+        user_word_idx[user] = FINGERPRINT_WORDS
+
+    # check_users is the set of users to check. Initialize it with all users.
+    # For each user, check if any other users share words. If greater than
+    # SHARED_USERS, remove that word from each user's set.
+    check_users = set(user_sorted_words.keys())
+    next_check_users = set()
+    # Count the number of iterations to prevent it from blowing up.
+    iterations = 0
+    while len(check_users) > 0 and iterations < 50:
+        for user in check_users:
+            # Force a copy of the set. The set may be modified during
+            # iteration.
+            words = list(user_top_words[user])
+            for word in words:
+                matching_users = set()
+                for compare_user in user_top_words:
+                    if word in user_top_words[compare_user]:
+                        matching_users.add(compare_user)
+                if len(matching_users) > SHARED_USERS:
+                    # Too many users with that word. No one gets it!
+                    for u in matching_users:
+                        user_top_words[u].remove(word)
+                        next_check_users.add(u)
+        # For each user that was modified somehow, add in more words for them
+        # to bring their total back up to the required number, if possible.
+        for user in next_check_users:
+            start_idx = user_word_idx[user]
+            end_idx = start_idx + FINGERPRINT_WORDS - len(user_top_words[user])
+            for w in user_sorted_words[user][start_idx:end_idx]:
+                user_top_words[user].add(w)
+            user_word_idx[user] = end_idx
+        # Update the set to check and clear the potential future set.
+        check_users = next_check_users
+        next_check_users = set()
+        iterations += 1
+        print iterations
+    print user_top_words
+
 def summarize_wordprint(user_wordprint, word_usage):
     def sort_words(user):
         # Given a user, return a lambda to sort the unique words in descending
@@ -78,6 +129,7 @@ def summarize_wordprint(user_wordprint, word_usage):
     top_words = sorted(word_usage,
         cmp=lambda a,b: cmp(word_usage[b], word_usage[a]))
     popular_words = set(top_words[0:250])
+    user_sorted_words = {}
     for user in user_wordprint:
         user_words = set(user_wordprint[user].keys())
         # If fewer than 100 unique words have been uttered by this person, skip
@@ -89,9 +141,8 @@ def summarize_wordprint(user_wordprint, word_usage):
         # If no unique words, skip this user.
         if len(user_print) == 0:
             continue
-        top_five = map(lambda x: "%s" % (x),
-                user_print[0:5])
-        print "%s: %s" % (user, ', '.join(top_five))
+        user_sorted_words[user] = user_print
+    find_unique_words(user_sorted_words)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
