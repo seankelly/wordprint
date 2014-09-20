@@ -117,7 +117,7 @@ def find_unique_words(user_sorted_words):
         next_check_users = set()
         iterations += 1
         print iterations
-    print user_top_words
+    return user_top_words, user_word_idx
 
 def summarize_wordprint(user_wordprint, word_usage):
     def sort_words(user):
@@ -142,7 +142,11 @@ def summarize_wordprint(user_wordprint, word_usage):
         if len(user_print) == 0:
             continue
         user_sorted_words[user] = user_print
-    find_unique_words(user_sorted_words)
+    user_top_words, user_word_idx = find_unique_words(user_sorted_words)
+
+    for user in sorted(user_top_words, cmp=lambda a,b: cmp(a.lower(), b.lower())):
+        print '%s (%d): %s' % (user, user_word_idx[user],
+                ', '.join(user_top_words[user]))
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
