@@ -15,7 +15,7 @@ valid_words = set()
 # Number of words to include in each user's fingerprint.
 FINGERPRINT_WORDS = 5
 # Number of total users that can shared a given word.
-SHARED_USERS = 2
+SHARED_USERS = 1
 
 def usage():
     print "usage: %s CSV ..." % (sys.argv[0])
