@@ -55,7 +55,7 @@ def generate_wordprint(comments_csv):
             lambda: 0))
     # Track how often each word is used.
     word_usage = defaultdict(lambda: 0)
-    find_words = re.compile('(\w+)')
+    find_words = re.compile("([\w-]+(?:'[\w+-]+)?)")
     global valid_words
     for user, text in read_comments(comments_csv):
         s = HTMLStrip()
