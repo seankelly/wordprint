@@ -13,7 +13,7 @@ from HTMLParser import HTMLParser
 valid_words = set()
 
 # Number of words to include in each user's fingerprint.
-FINGERPRINT_WORDS = 4
+FINGERPRINT_WORDS = 5
 # Number of total users that can shared a given word.
 SHARED_USERS = 2
 
