@@ -4,6 +4,7 @@ Create word fingerprints from CSV dumps of the comments table of a
 Wordpress site.
 """
 
+import argparse
 import csv
 import re
 import sys
@@ -17,9 +18,6 @@ FINGERPRINT_WORDS = 5
 # Number of total users that can shared a given word.
 SHARED_USERS = 1
 
-def usage():
-    print "usage: %s CSV ..." % (sys.argv[0])
-    sys.exit(0)
 
 def load_dictionary():
     global valid_words
@@ -148,10 +146,26 @@ def summarize_wordprint(user_wordprint, word_usage):
         print '%s (%d): %s' % (user, user_word_idx[user],
                 ', '.join(user_top_words[user]))
 
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        usage()
+
+def options():
+    parser = argparse.ArgumentParser("Wordprint for WordPress users")
+    parser.add_argument('--words', '-w', type=int, default=FINGERPRINT_WORDS,
+                        help="Number of words to include in each user's fingerprint.")
+    parser.add_argument('--user-overlap', '-u', type=int, default=SHARED_USERS,
+                        help="Number of total users that can share a word.")
+    parser.add_argument('comments', nargs='+',
+                        help="CSV file containing WordPress comments.")
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    args = options()
 
     load_dictionary()
-    for comments_csv in sys.argv[1:]:
+    for comments_csv in args.comments:
         generate_wordprint(comments_csv)
+
+
+if __name__ == '__main__':
+    main()
