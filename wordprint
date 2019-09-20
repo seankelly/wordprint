@@ -27,6 +27,7 @@ def load_dictionary():
             valid_words.add(w)
     valid_words.remove('twitter')
 
+
 class HTMLStrip(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
@@ -38,6 +39,7 @@ class HTMLStrip(HTMLParser):
     def stripped_html(self):
         return ''.join(self.fed)
 
+
 def read_comments(csv_file):
     # Field 3: user
     # Field 9: text
@@ -45,6 +47,7 @@ def read_comments(csv_file):
     c = csv.reader(f, delimiter=',', doublequote=False, escapechar='\\')
     for l in c:
         yield l[2], l[8]
+
 
 def generate_wordprint(comments_csv):
     # User dict to map user => word => count.
@@ -71,6 +74,7 @@ def generate_wordprint(comments_csv):
             user_wordprint[user][w] += 1
     summarize_wordprint(user_wordprint, word_usage)
 
+
 def find_unique_words(user_sorted_words):
     user_top_words = {}
     user_word_idx = {}
@@ -83,11 +87,11 @@ def find_unique_words(user_sorted_words):
     # check_users is the set of users to check. Initialize it with all users.
     # For each user, check if any other users share words. If greater than
     # SHARED_USERS, remove that word from each user's set.
-    check_users = set(user_sorted_words.keys())
+    check_users = set(user_sorted_words)
     next_check_users = set()
     # Count the number of iterations to prevent it from blowing up.
     iterations = 0
-    while len(check_users) > 0 and iterations < 50:
+    while check_users > 0 and iterations < 50:
         for user in check_users:
             # Force a copy of the set. The set may be modified during
             # iteration.
@@ -117,12 +121,14 @@ def find_unique_words(user_sorted_words):
         print(iterations, flush=True)
     return user_top_words, user_word_idx
 
+
 def summarize_wordprint(user_wordprint, word_usage):
     top_words = sorted(word_usage, key=lambda user: word_usage[user], reverse=True)
     popular_words = set(top_words[0:250])
     user_sorted_words = {}
+
     for user in user_wordprint:
-        user_words = set(user_wordprint[user].keys())
+        user_words = set(user_wordprint[user])
         # If fewer than 100 unique words have been uttered by this person, skip
         # them.
         if len(user_words) < 100:
@@ -131,7 +137,7 @@ def summarize_wordprint(user_wordprint, word_usage):
         user_print = sorted(user_unique, key=lambda word: user_wordprint[user][word],
                             reverse=True)
         # If no unique words, skip this user.
-        if len(user_print) == 0:
+        if not user_print:
             continue
         user_sorted_words[user] = user_print
     user_top_words, user_word_idx = find_unique_words(user_sorted_words)
