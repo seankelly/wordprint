@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Create word fingerprints from CSV dumps of the comments table of a
 Wordpress site.
@@ -9,7 +9,7 @@ import csv
 import re
 import sys
 from collections import defaultdict
-from HTMLParser import HTMLParser
+from html.parser import HTMLParser
 
 valid_words = set()
 
@@ -21,7 +21,7 @@ SHARED_USERS = 1
 
 def load_dictionary():
     global valid_words
-    with open('/usr/share/dict/words', 'rb') as f:
+    with open('/usr/share/dict/words', 'r') as f:
         for word in f:
             w = word.strip().lower()
             valid_words.add(w)
@@ -41,7 +41,7 @@ class HTMLStrip(HTMLParser):
 def read_comments(csv_file):
     # Field 3: user
     # Field 9: text
-    f = open(csv_file, 'rb')
+    f = open(csv_file, 'r')
     c = csv.reader(f, delimiter=',', doublequote=False, escapechar='\\')
     for l in c:
         yield l[2], l[8]
@@ -58,7 +58,7 @@ def generate_wordprint(comments_csv):
     for user, text in read_comments(comments_csv):
         s = HTMLStrip()
         # Convert to lowercase.
-        s.feed(unicode(text, encoding='utf8'))
+        s.feed(text)
         lower_text = s.stripped_html().lower()
         # Grab all 'words'. Using the regex understanding of what a word is.
         words = find_words.findall(lower_text)
@@ -114,18 +114,11 @@ def find_unique_words(user_sorted_words):
         check_users = next_check_users
         next_check_users = set()
         iterations += 1
-        print iterations
+        print(iterations, flush=True)
     return user_top_words, user_word_idx
 
 def summarize_wordprint(user_wordprint, word_usage):
-    def sort_words(user):
-        # Given a user, return a lambda to sort the unique words in descending
-        # order.
-        u = user_wordprint[user]
-        return lambda a,b: cmp(u[b], u[a])
-
-    top_words = sorted(word_usage,
-        cmp=lambda a,b: cmp(word_usage[b], word_usage[a]))
+    top_words = sorted(word_usage, key=lambda user: word_usage[user], reverse=True)
     popular_words = set(top_words[0:250])
     user_sorted_words = {}
     for user in user_wordprint:
@@ -135,16 +128,17 @@ def summarize_wordprint(user_wordprint, word_usage):
         if len(user_words) < 100:
             continue
         user_unique = user_words - popular_words
-        user_print = sorted(user_unique, sort_words(user))
+        user_print = sorted(user_unique, key=lambda word: user_wordprint[user][word],
+                            reverse=True)
         # If no unique words, skip this user.
         if len(user_print) == 0:
             continue
         user_sorted_words[user] = user_print
     user_top_words, user_word_idx = find_unique_words(user_sorted_words)
 
-    for user in sorted(user_top_words, cmp=lambda a,b: cmp(a.lower(), b.lower())):
-        print '%s (%d): %s' % (user, user_word_idx[user],
-                ', '.join(user_top_words[user]))
+    for user in sorted(user_top_words, key=str.lower):
+        print('%s (%d): %s' % (user, user_word_idx[user],
+                ', '.join(user_top_words[user])))
 
 
 def options():
