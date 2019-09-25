@@ -91,7 +91,7 @@ def find_unique_words(user_sorted_words):
     next_check_users = set()
     # Count the number of iterations to prevent it from blowing up.
     iterations = 0
-    while check_users > 0 and iterations < 50:
+    while check_users and iterations < 50:
         for user in check_users:
             # Force a copy of the set. The set may be modified during
             # iteration.
