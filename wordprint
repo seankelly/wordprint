@@ -6,6 +6,7 @@ Wordpress site.
 
 import argparse
 import csv
+import logging
 import re
 import sys
 from collections import defaultdict
@@ -20,6 +21,8 @@ MINIMUM_COMMENTS = 100
 # Number of total users that can shared a given word.
 SHARED_USERS = 1
 POPULAR_WORDS = 250
+
+LOG = logging.getLogger()
 
 
 def load_dictionary():
@@ -166,6 +169,14 @@ def options():
 
 def main():
     args = options()
+    if args.verbose >= 2:
+        LOG.setLevel(logging.DEBUG)
+    elif args.verbose >= 1:
+        LOG.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    LOG.addHandler(handler)
 
     load_dictionary()
     for comments_csv in args.comments:
