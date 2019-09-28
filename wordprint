@@ -155,6 +155,8 @@ def options():
                         help="Number of words to include in each user's fingerprint.")
     parser.add_argument('--user-overlap', '-u', type=int, default=SHARED_USERS,
                         help="Number of total users that can share a word.")
+    parser.add_argument('--verbose', '-v', default=0, action='count',
+                        help="Increase program verbosity.")
     parser.add_argument('comments', nargs='+',
                         help="CSV file containing WordPress comments.")
     args = parser.parse_args()
