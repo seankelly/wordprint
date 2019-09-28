@@ -19,6 +19,7 @@ FINGERPRINT_WORDS = 5
 MINIMUM_COMMENTS = 100
 # Number of total users that can shared a given word.
 SHARED_USERS = 1
+POPULAR_WORDS = 250
 
 
 def load_dictionary():
@@ -126,7 +127,7 @@ def find_unique_words(user_sorted_words):
 
 def summarize_wordprint(user_wordprint, word_usage):
     top_words = sorted(word_usage, key=lambda user: word_usage[user], reverse=True)
-    popular_words = set(top_words[0:250])
+    popular_words = set(top_words[:POPULAR_WORDS])
     user_sorted_words = {}
 
     for user in user_wordprint:
