@@ -198,7 +198,7 @@ def main():
     handler.setFormatter(formatter)
     LOG.addHandler(handler)
 
-    wordprint = Wordprint()
+    wordprint = Wordprint(fingerprint_words=args.words, shared_users=args.user_overlap)
     wordprint.load_dictionary()
     for comments_csv in args.comments:
         wordprint.load_comments(comments_csv)
