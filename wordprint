@@ -21,6 +21,7 @@ MINIMUM_COMMENTS = 100
 # Number of total users that can shared a given word.
 SHARED_USERS = 1
 POPULAR_WORDS = 250
+MAX_ITERATIONS = 50
 
 LOG = logging.getLogger()
 
@@ -44,6 +45,141 @@ class HTMLStrip(HTMLParser):
 
     def stripped_html(self):
         return ''.join(self.fed)
+
+
+class Wordprint:
+
+    DEFAULT_DICTIONARY = '/usr/share/dict/words'
+
+    def __init__(self, fingerprint_words=None, minimum_comments=None, shared_users=None):
+        self.valid_words = set()
+        self.fingerprint_words = fingerprint_words or FINGERPRINT_WORDS
+        self.shared_users = shared_users or SHARED_USERS
+        self.minimum_comments = minimum_comments or MINIMUM_COMMENTS
+        # Number of comments seen by that user.
+        self._user_comments = defaultdict(lambda: 0)
+        # User dict to map user => word => count.
+        self._user_wordprint = defaultdict(
+            lambda: defaultdict(
+                lambda: 0))
+        # Track how often each word is used.
+        self._word_usage = defaultdict(lambda: 0)
+
+    def load_dictionary(self, dictionary_file=None):
+        valid_words = set()
+        if not dictionary_file:
+            dictionary_file = self.DEFAULT_DICTIONARY
+        with open(dictionary_file, 'r') as dictionary:
+            for word in dictionary:
+                lowercase_word = word.strip().lower()
+                valid_words.add(lowercase_word)
+        valid_words.remove('twitter')
+        self.valid_words.update(valid_words)
+        LOG.info("Total word count: %d", len(self.valid_words))
+
+    def load_comments(self, csv_file):
+        if not self.valid_words:
+            self.load_dictionary()
+        find_words = re.compile("([\w-]+(?:'[\w+-]+)?)")
+        with open(csv_file, 'r') as comments_input:
+            comments = csv.reader(comments_input, delimiter=',', doublequote=False,
+                                  escapechar='\\')
+            for line in comments:
+                user, text = line[2], line[8]
+                s = HTMLStrip()
+                # Convert to lowercase.
+                s.feed(text)
+                lower_text = s.stripped_html().lower()
+                # Grab all 'words'. Using the regex understanding of what a word is.
+                words = find_words.findall(lower_text)
+                for word in words:
+                    if word not in self.valid_words:
+                        continue
+                    if len(word) <= 3:
+                        continue
+                    self._word_usage[word] += 1
+                    self._user_wordprint[user][word] += 1
+                self._user_comments[user] += 1
+        LOG.info("Total user count: %d", len(self._user_wordprint))
+
+    def generate_wordprint(self):
+        user_sorted_words = self._summarize_wordprint()
+        user_top_words, user_word_idx = self._find_unique_words(user_sorted_words)
+        for user in sorted(user_top_words, key=str.lower):
+            word_print = ', '.join(sorted(user_top_words[user]))
+            print(f"{user} ({user_word_idx[user]}): {word_print}")
+
+    def _find_unique_words(self, user_sorted_words):
+        user_top_words = {}
+        user_word_idx = {}
+        # Map word => set of users with that word.
+        word_usage = defaultdict(set)
+        # Get the top N words for each user.
+        for user in user_sorted_words:
+            top_words = set()
+            # Pop off the words because it's sorted from least to most common.
+            # It will be easy to take more when needed later.
+            for _ in range(self.fingerprint_words):
+                word = user_sorted_words[user].pop()
+                top_words.add(word)
+                word_usage[word].add(user)
+            user_top_words[user] = top_words
+            user_word_idx[user] = self.fingerprint_words
+
+        update_word_print_users = set()
+        # Count the number of iterations to prevent it from blowing up.
+        iterations = 1
+        # Scan all users every time to keep the wordprint stable.
+        word_collisions = True
+        while word_collisions and iterations <= MAX_ITERATIONS:
+            # Assume no collisions and then try to find one.
+            word_collisions = False
+            print(f"Iteration {iterations}", flush=True)
+            word_list = list(word_usage.items())
+            for word, users in word_list:
+                # Too many users with that word. No one gets it!
+                if len(users) > SHARED_USERS:
+                    LOG.debug("Rejecting %s", word)
+                    word_collisions = True
+                    for u in users:
+                        user_top_words[u].remove(word)
+                        update_word_print_users.add(u)
+                    del word_usage[word]
+            # For each user that was modified somehow, add in more words for them
+            # to bring their total back up to the required number, if possible.
+            for user in update_word_print_users:
+                while len(user_top_words[user]) < self.fingerprint_words:
+                    next_word = user_sorted_words[user].pop()
+                    user_top_words[user].add(next_word)
+                    word_usage[next_word].add(user)
+                    user_word_idx[user] += 1
+            update_word_print_users.clear()
+            iterations += 1
+        return user_top_words, user_word_idx
+
+    def _summarize_wordprint(self):
+        top_words = sorted(self._word_usage, key=self._word_usage.get, reverse=True)
+        popular_words = set(top_words[:POPULAR_WORDS])
+        user_sorted_words = {}
+
+        for user, user_word_usage in self._user_wordprint.items():
+            if self._user_comments[user] < self.minimum_comments:
+                continue
+            user_words = set(user_word_usage)
+            # If fewer than 100 unique words have been uttered by this person, skip
+            # them.
+            if len(user_words) < 100:
+                continue
+            unique_words = user_words - popular_words
+            # If no words outside of the popular words, skip this user.
+            if not unique_words:
+                continue
+            # Sort so the most used words are at the end. This will make
+            # getting the next most common word an easier operation.
+            user_print = sorted(unique_words, key=user_word_usage.get)
+            user_sorted_words[user] = user_print
+            LOG.debug("unique words for %s: %s", user, user_print)
+        return user_sorted_words
 
 
 def read_comments(csv_file):
@@ -178,9 +314,11 @@ def main():
     handler.setFormatter(formatter)
     LOG.addHandler(handler)
 
-    load_dictionary()
+    wordprint = Wordprint()
+    wordprint.load_dictionary()
     for comments_csv in args.comments:
-        generate_wordprint(comments_csv)
+        wordprint.load_comments(comments_csv)
+    user_wordprint = wordprint.generate_wordprint()
 
 
 if __name__ == '__main__':
