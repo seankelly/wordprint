@@ -26,15 +26,6 @@ MAX_ITERATIONS = 50
 LOG = logging.getLogger()
 
 
-def load_dictionary():
-    global valid_words
-    with open('/usr/share/dict/words', 'r') as f:
-        for word in f:
-            w = word.strip().lower()
-            valid_words.add(w)
-    valid_words.remove('twitter')
-
-
 class HTMLStrip(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
@@ -180,113 +171,6 @@ class Wordprint:
             user_sorted_words[user] = user_print
             LOG.debug("unique words for %s: %s", user, user_print)
         return user_sorted_words
-
-
-def read_comments(csv_file):
-    # Field 3: user
-    # Field 9: text
-    f = open(csv_file, 'r')
-    c = csv.reader(f, delimiter=',', doublequote=False, escapechar='\\')
-    for l in c:
-        yield l[2], l[8]
-
-
-def generate_wordprint(comments_csv):
-    # User dict to map user => word => count.
-    user_wordprint = defaultdict(
-        lambda: defaultdict(
-            lambda: 0))
-    # Track how often each word is used.
-    word_usage = defaultdict(lambda: 0)
-    find_words = re.compile("([\w-]+(?:'[\w+-]+)?)")
-    global valid_words
-    for user, text in read_comments(comments_csv):
-        s = HTMLStrip()
-        # Convert to lowercase.
-        s.feed(text)
-        lower_text = s.stripped_html().lower()
-        # Grab all 'words'. Using the regex understanding of what a word is.
-        words = find_words.findall(lower_text)
-        for w in words:
-            if w not in valid_words:
-                continue
-            if len(w) <= 3:
-                continue
-            word_usage[w] += 1
-            user_wordprint[user][w] += 1
-    summarize_wordprint(user_wordprint, word_usage)
-
-
-def find_unique_words(user_sorted_words):
-    user_top_words = {}
-    user_word_idx = {}
-    # Get the top N words for each user.
-    for user in user_sorted_words:
-        top_words = user_sorted_words[user][0:FINGERPRINT_WORDS]
-        user_top_words[user] = set(top_words)
-        user_word_idx[user] = FINGERPRINT_WORDS
-
-    # check_users is the set of users to check. Initialize it with all users.
-    # For each user, check if any other users share words. If greater than
-    # SHARED_USERS, remove that word from each user's set.
-    check_users = set(user_sorted_words)
-    next_check_users = set()
-    # Count the number of iterations to prevent it from blowing up.
-    iterations = 0
-    while check_users and iterations < 50:
-        for user in check_users:
-            # Force a copy of the set. The set may be modified during
-            # iteration.
-            words = list(user_top_words[user])
-            for word in words:
-                matching_users = set()
-                for compare_user in user_top_words:
-                    if word in user_top_words[compare_user]:
-                        matching_users.add(compare_user)
-                if len(matching_users) > SHARED_USERS:
-                    # Too many users with that word. No one gets it!
-                    for u in matching_users:
-                        user_top_words[u].remove(word)
-                        next_check_users.add(u)
-        # For each user that was modified somehow, add in more words for them
-        # to bring their total back up to the required number, if possible.
-        for user in next_check_users:
-            start_idx = user_word_idx[user]
-            end_idx = start_idx + FINGERPRINT_WORDS - len(user_top_words[user])
-            for w in user_sorted_words[user][start_idx:end_idx]:
-                user_top_words[user].add(w)
-            user_word_idx[user] = end_idx
-        # Update the set to check and clear the potential future set.
-        check_users = next_check_users
-        next_check_users = set()
-        iterations += 1
-        print(iterations, flush=True)
-    return user_top_words, user_word_idx
-
-
-def summarize_wordprint(user_wordprint, word_usage):
-    top_words = sorted(word_usage, key=lambda user: word_usage[user], reverse=True)
-    popular_words = set(top_words[:POPULAR_WORDS])
-    user_sorted_words = {}
-
-    for user in user_wordprint:
-        user_words = set(user_wordprint[user])
-        # If fewer than 100 unique words have been uttered by this person, skip
-        # them.
-        if len(user_words) < 100:
-            continue
-        user_unique = user_words - popular_words
-        user_print = sorted(user_unique, key=lambda word: user_wordprint[user][word],
-                            reverse=True)
-        # If no unique words, skip this user.
-        if not user_print:
-            continue
-        user_sorted_words[user] = user_print
-    user_top_words, user_word_idx = find_unique_words(user_sorted_words)
-
-    for user in sorted(user_top_words, key=str.lower):
-        print('%s (%d): %s' % (user, user_word_idx[user],
-                ', '.join(user_top_words[user])))
 
 
 def options():
